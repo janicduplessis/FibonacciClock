@@ -1,12 +1,15 @@
 package com.example.janicduplessis.myapplication;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Camera;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
@@ -17,6 +20,7 @@ import android.media.ImageReader.OnImageAvailableListener;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -44,8 +48,22 @@ public class CameraView{
     private Handler _backgroundHandlerCamera = null;
     private ImageReader _reader = null;
     private Semaphore _cameraOpenCloseLock = new Semaphore(1);
+    private Activity _activity;
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final int REQUEST_CAMERA_PERMISSION = 1;
+    private static final String FRAGMENT_DIALOG = "dialog";
+    private CameraCharacteristics _specs = null;
 
-    public CameraView(Context context, CameraDevice camera, Surface surface, int width, int height){
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
+
+
+    public CameraView(Context context, CameraDevice camera, Surface surface, int width, int height, Activity activity, CameraCharacteristics specs){
 
         //_backgroundThreadImageReader = new HandlerThread("CameraImageReader");
         //_backgroundThreadImageReader.start();
@@ -56,6 +74,8 @@ public class CameraView{
        // _reader.setOnImageAvailableListener(ImageReaderListener, _backgroundHandlerImageReader);
 
        // _surfaces.add(_reader.getSurface());
+        _specs = specs;
+        _activity = activity;
         _surfaces.add(surface);
         _camera = camera;
 
@@ -86,6 +106,10 @@ public class CameraView{
                 CaptureRequest.Builder builder = session.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                 builder.addTarget(_surfaces.get(0));
+
+                int rotation = _activity.getWindowManager().getDefaultDisplay().getRotation();
+                builder.set(CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(_specs, rotation));
+
                 CaptureRequest request = builder.build();
 
 
@@ -106,6 +130,25 @@ public class CameraView{
             Log.e(TAG, "CameraCaptureSession Configure failed");
         }
     };
+
+    private int getJpegOrientation(CameraCharacteristics c, int deviceOrientation) {
+        if (deviceOrientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return 0;
+        int sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION);
+
+        // Round device orientation to a multiple of 90
+        deviceOrientation = (deviceOrientation + 45) / 90 * 90;
+
+        // Reverse device orientation for front-facing cameras
+        boolean facingFront = c.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT;
+        if (facingFront) deviceOrientation = -deviceOrientation;
+
+        // Calculate desired JPEG orientation relative to camera orientation to make
+        // the image upright relative to the device orientation
+        int jpegOrientation = (sensorOrientation + deviceOrientation + 360) % 360;
+
+        return jpegOrientation;
+    }
+
 
     /*
     private CameraCaptureSession.StateCallback CameraCaptureSessionBurstCallBack = new CameraCaptureSession.StateCallback() {

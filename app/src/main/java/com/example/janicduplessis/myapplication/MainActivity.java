@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     private Size _previewSize = null;
     private CameraDevice _camera = null;
     private DrawView _drawView = null;
+    private Activity _self = null;
+    private CameraCharacteristics _specs = null;
 
 
     private final static String TAG = "SimpleCamera";
@@ -95,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
 
         mTextureView = (TextureView) findViewById(R.id.textureView1);
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListner);
+
+        _self = this;
 
     }
 
@@ -156,12 +160,12 @@ public class MainActivity extends AppCompatActivity {
             String[] cameraIdArray = manager.getCameraIdList();
             //find the rear camera
             for (String id : cameraIdArray) {
-                CameraCharacteristics specs = manager.getCameraCharacteristics(id);
+                _specs = manager.getCameraCharacteristics(id);
 
-                StreamConfigurationMap map = specs.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                StreamConfigurationMap map = _specs.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 _previewSize = map.getOutputSizes(SurfaceTexture.class)[0];
 
-                int Orientation = specs.get(CameraCharacteristics.LENS_FACING);
+                int Orientation = _specs.get(CameraCharacteristics.LENS_FACING);
                 if (Orientation == CameraCharacteristics.LENS_FACING_BACK) {
                     try {
                         ContextCompat compact = new ContextCompat();
@@ -210,6 +214,13 @@ public class MainActivity extends AppCompatActivity {
             matrix.postRotate(180, centerX, centerY);
         }
         mTextureView.setTransform(matrix);
+
+        //stop the cam and restart it yo !
+        _cameraView.closeCamera();
+        _cameraView.stopBackgroundThread();
+        _cameraView = null;
+        initializeCamera();
+
     }
 
     private final CameraDevice.StateCallback CameraOpenCallBack = new CameraDevice.StateCallback() {
@@ -226,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
             texture.setDefaultBufferSize(_previewSize.getWidth(), _previewSize.getHeight());
             Surface surface = new Surface(texture);
 
-            _cameraView = new CameraView(_context, camera, surface, _previewSize.getWidth(), _previewSize.getHeight());
+            _cameraView = new CameraView(_context, camera, surface, _previewSize.getWidth(), _previewSize.getHeight(), _self, _specs);
         }
 
         @Override
