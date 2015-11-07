@@ -42,11 +42,20 @@ public class DrawView extends View {
         paint.setColor(Color.BLUE);
         paint.setStrokeWidth(8);
 
-        canvas.drawRect((width / 7),
-                ((height / 9)),
-                ((width - (width / 7))),
-                ((height - (height / 9))),
-                paint);
+        //landscape
+        if( width > height) {
+            canvas.drawRect((width / 7),
+                    ((height / 9)),
+                    ((width - (width / 7))),
+                    ((height - (height / 9))),
+                    paint);
+        }else{
+            canvas.drawRect((width / 7),
+                    ((height / 3)),
+                    ((width - (width / 7))),
+                    ((height - (height / 3))),
+                    paint);
+        }
 
     }
 }
