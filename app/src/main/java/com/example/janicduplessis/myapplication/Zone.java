@@ -27,5 +27,5 @@ public class Zone {
     /**
      * The value of the matching color if a color is matching or -1 of no match.
      */
-    public int value = -1;
+    public ColorType color;
 }

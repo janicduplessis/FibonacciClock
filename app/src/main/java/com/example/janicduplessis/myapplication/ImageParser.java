@@ -37,7 +37,7 @@ public class ImageParser {
             // For each pixel inside the zone check if it matches any color from the
             // color configs.
             zone.matches = new int[mColorConfigs.size()];
-            zone.value = -1;
+            zone.color = ColorType.NONE;
             for(int x = zone.rect.left; x < zone.rect.right; x++) {
                 for(int y = zone.rect.top; y < zone.rect.bottom; y++) {
                     int pixel = bitmap.getPixel(x, y);
@@ -53,80 +53,54 @@ public class ImageParser {
             int bestMatch = -1;
             double bestMatchRatio = 0;
             for (int i = 0; i < zone.matches.length; i++) {
-                double ratio = zone.matches[i] / (zone.rect.width() * zone.rect.height());
-                if (ratio >= 0.8 && (bestMatch == -1 || ratio > bestMatchRatio)) {
+                double ratio = zone.matches[i] / (double)(zone.rect.width() * zone.rect.height());
+                if (ratio >= 0.5 && (bestMatch == -1 || ratio > bestMatchRatio)) {
                     bestMatch = i;
                     bestMatchRatio = ratio;
                 }
             }
             if (bestMatch != -1) {
-                zone.value = mColorConfigs.get(bestMatch).value;
+                zone.color = mColorConfigs.get(bestMatch).colorType;
             }
         }
 
         ImageParserResult res = new ImageParserResult();
         res.success = true;
-        res.values = new int[mZones.size()];
+        res.values = new ColorType[mZones.size()];
         for (int i = 0; i < mZones.size(); i++) {
-            if (mZones.get(i).value == -1) {
+            if (mZones.get(i).color == ColorType.NONE) {
                 res.success = false;
             }
-            res.values[i] = mZones.get(i).value;
+            res.values[i] = mZones.get(i).color;
         }
 
         return res;
     }
 
     private int indexOfMatch(int pixel) {
-        // TODO: Check if the color is close to the color specified in the config.
+        // All right so we transform this into HSV
+        float[] hsvValue = new float[3];
+        Color.colorToHSV(pixel, hsvValue);
+        float hue = hsvValue[0];
+        float saturation = hsvValue[1];
+        float value = hsvValue[2];
+
         for (int i = 0; i < mColorConfigs.size(); i++) {
             ColorConfig config = mColorConfigs.get(i);
-            if(checkifColorValid(config.color))
+            float[] configHsv = new float[3];
+            Color.colorToHSV(config.colorValue, configHsv);
+            // Get the difference between the pixel color and the config color.
+            float hueDiff = Math.min(Math.abs(configHsv[0] - hue), 360 - Math.abs(configHsv[0] - hue));
+            float satDiff = Math.abs(configHsv[1] - saturation);
+            float valueDiff = Math.abs(configHsv[2] - value);
+
+            if (hueDiff <= config.hueTolerance &&
+                    satDiff <= config.saturationTolerance &&
+                    valueDiff <= config.valueTolerance) {
                 return i;
+            }
         }
 
         return -1;
-    }
-
-    private boolean checkifColorValid(int color)
-    {
-       //all rigth so we transform this into HSV
-        float[] hsvValue = new float[3];
-        Color.colorToHSV(color, hsvValue);
-
-        float Hue = hsvValue[0];
-        float Saturation = hsvValue[1];
-        float Value = hsvValue[2];
-
-        //acceptable values
-        int SaturationMin = 50;
-        int SaturationMax = 100;
-        int ValueMin = 60;
-        int ValueMax = 100;
-
-        //more on the purple side
-        int RedHueMinHighSpectrum = 318;
-        int RedHueMaxHighSpectrum = 358;
-
-        //more on the orange side
-        int RedHueMinLowSpectrum = 0;
-        int RedHueMaxLowSpectrum = 20;
-
-        //between yellow and blue
-        int GreenHueMin = 82;
-        int GreenHueMax = 164;
-
-        //between green and purple
-        int BlueHueMin = 172;
-        int BlueHueMax = 274;
-
-
-        boolean SaturationOk = Saturation > SaturationMin && Saturation < SaturationMax;
-        boolean ValueOk = Value > ValueMin && Value < ValueMax;
-        boolean HueOk =  ((Hue > RedHueMinHighSpectrum && Hue < RedHueMaxHighSpectrum) || (Hue > RedHueMinLowSpectrum && Hue < RedHueMaxLowSpectrum) ||
-                         (Hue > GreenHueMin && Hue < GreenHueMax) ||
-                         (Hue > BlueHueMin && Hue < BlueHueMax));
-
-        return SaturationOk && ValueOk && HueOk;
     }
 }
