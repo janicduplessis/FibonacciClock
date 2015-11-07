@@ -12,5 +12,5 @@ public class ImageParserResult {
     /**
      * The values for each zones.
      */
-    public int[] values;
+    public ColorType[] values;
 }
