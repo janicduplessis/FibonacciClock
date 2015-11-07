@@ -33,6 +33,13 @@ public class CameraView{
     public CameraView(Context context, CameraDevice camera, Surface surface){
         _surfaces.add(surface);
         _camera = camera;
+
+
+        try {
+            _camera.createCaptureSession(_surfaces,CameraCaptureSessionCallBack, null);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -52,25 +59,25 @@ public class CameraView{
 
 
 
+
     private CameraCaptureSession.StateCallback CameraCaptureSessionCallBack = new CameraCaptureSession.StateCallback() {
 
         @Override
         public void onConfigured(CameraCaptureSession session) {
             // TODO Auto-generated method stub
             Log.i(TAG, "onConfigured");
-            _currentSession = session;
-            CaptureRequest.Builder builder = null;
             try {
-                builder = _currentSession.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                CaptureRequest.Builder builder = session.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                 builder.addTarget(_surfaces.get(0));
                 CaptureRequest request = builder.build();
+
 
                 HandlerThread backgroundThread = new HandlerThread("CameraPreview");
                 backgroundThread.start();
                 Handler backgroundHandler = new Handler(backgroundThread.getLooper());
 
-                _currentSession.setRepeatingRequest(request, CameraCaptureCallback, backgroundHandler);
+                session.setRepeatingRequest(request, CameraCaptureCallback, backgroundHandler);
 
             } catch (CameraAccessException e) {
                 e.printStackTrace();
