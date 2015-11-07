@@ -29,6 +29,18 @@ public class DrawView extends View {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
 
+    public void fiboDetected(boolean isFibo){
+        if(isFibo)
+        {
+            mPaint.setColor(Color.GREEN);
+        }else{
+            mPaint.setColor(Color.BLUE);
+        }
+    }
+
+    private Paint mPaint = new Paint();
+
+
     @Override
     public void onDraw(Canvas canvas) {
 
@@ -39,7 +51,6 @@ public class DrawView extends View {
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         //then draw the square !!
-        paint.setColor(Color.BLUE);
         paint.setStrokeWidth(8);
 
         //landscape

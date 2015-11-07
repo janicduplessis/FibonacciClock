@@ -6,10 +6,11 @@ android {
 
     defaultConfig {
         applicationId "com.example.janicduplessis.myapplication"
-        minSdkVersion 23
+        minSdkVersion 22
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
     }
     buildTypes {
         release {

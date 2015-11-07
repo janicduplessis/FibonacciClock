@@ -15,6 +15,8 @@ package com.example.janicduplessis.myapplication;
  * limitations under the License.
  */
 
+        import android.graphics.Bitmap;
+        import android.graphics.Color;
         import android.support.v13.app.FragmentCompat;
         import android.Manifest;
         import android.app.Activity;
@@ -69,7 +71,7 @@ package com.example.janicduplessis.myapplication;
         import java.util.concurrent.Semaphore;
         import java.util.concurrent.TimeUnit;
 
-public class CameraFragment extends Fragment implements View.OnClickListener {
+public class CameraFragment extends Fragment {
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -115,6 +117,8 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
      */
     private static final int STATE_PICTURE_TAKEN = 4;
 
+    private Context mContext = null;
+
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
      * {@link TextureView}.
@@ -123,6 +127,19 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
             openCamera(width, height);
+
+            //take picture each 3 seconds
+            final Handler h = new Handler();
+            final int delay = 3000; //milliseconds
+            h.postDelayed(new Runnable() {
+                public void run() {
+                    //do something
+                    takePicture();
+                    h.postDelayed(this, delay);
+                    //check for result !!
+                    updateView();
+                }
+            }, delay);
         }
 
         @Override
@@ -220,13 +237,24 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
     private File mFile;
 
     /**
+     * this is the object that check if the image taken contain a fibonnaci hour
+     */
+    private ImageProcessor mProcessor;
+
+    /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
      */
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            //mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            if(mProcessor == null) {
+                mProcessor = new ImageProcessor(reader.acquireLatestImage(), reader.getWidth(), reader.getHeight(), mContext);
+            }else{
+                mProcessor.updateProcessor(reader.acquireLatestImage(), reader.getWidth(), reader.getHeight(), mContext);
+            }
+            mBackgroundHandler.post(mProcessor);
         }
     };
 
@@ -379,9 +407,11 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+        //view.findViewById(R.id.picture).setOnClickListener(this);
+        //view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+
+        mContext =  view.getContext();
     }
 
     @Override
@@ -414,24 +444,12 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
     }
 
     private void requestCameraPermission() {
-
-        /*ContextCompat compact = new ContextCompat();
-        if (compact.checkSelfPermission(this.getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            this.requestPermissions(new String[]{Manifest.permission.CAMERA}, Constants.REQUEST_CODE_FOR_CAMERA);
-        }
-        */
-
         if (FragmentCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
-            FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
-                    REQUEST_CAMERA_PERMISSION);
+            FragmentCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
-
     }
-
-
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -499,10 +517,14 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
     }
 
     /**
-     * Opens the camera specified by {@link Camera2BasicFragment#mCameraId}.
+     * Opens the camera specified by {@link CameraFragment#mCameraId}.
      */
     private void openCamera(int width, int height) {
-        if (getActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+
+        //if (getActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+
+        if(ContextCompat.checkSelfPermission(mContext,Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
+        {
             requestCameraPermission();
             return;
         }
@@ -585,8 +607,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
             Surface surface = new Surface(texture);
 
             // We set up a CaptureRequest.Builder with the output Surface.
-            mPreviewRequestBuilder
-                    = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
 
             // Here, we create a CameraCaptureSession for camera preview.
@@ -721,15 +742,14 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
             int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
 
-            CameraCaptureSession.CaptureCallback CaptureCallback
-                    = new CameraCaptureSession.CaptureCallback() {
+            CameraCaptureSession.CaptureCallback CaptureCallback = new CameraCaptureSession.CaptureCallback() {
 
                 @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    showToast("Saved: " + mFile);
-                    Log.d(TAG, mFile.toString());
+                   // showToast("Saved: " + mFile);
+                   // Log.d(TAG, mFile.toString());
                     unlockFocus();
                 }
             };
@@ -758,7 +778,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
             e.printStackTrace();
         }
     }
-
+/*
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -778,6 +798,7 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
             }
         }
     }
+    */
 
     /**
      * Saves a JPEG {@link Image} into the specified {@link File}.
@@ -819,6 +840,87 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
                     }
                 }
             }
+        }
+
+    }
+
+    private class ImageProcessor implements Runnable {
+        /**
+         * The JPEG image
+         */
+        private Image mImage;
+        private int mWidth;
+        private int mHeight;
+        private int mDesiredWidth;
+        private int mDesiredHeight;
+        private Context mContext;
+        private boolean mResult = false;
+
+        public ImageProcessor(Image image, int width, int height, Context context){
+            mImage = image;
+            mContext = context;
+            mWidth = width;
+            mHeight = height;
+
+            //for now there are both the same
+            mDesiredWidth = mWidth / 2;
+            mDesiredHeight = mHeight / 2;
+        }
+
+        @Override
+        public void run() {
+
+            ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+
+            //create bitmap from image
+            Bitmap bitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+
+            //hack, pcq j'avais des expceptions comme quoi Buffer not large enough for pixels
+            //http://stackoverflow.com/questions/12208619/buffer-not-large-enough-for-pixels
+           // buffer = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight() * 2);
+            try {
+                bitmap.copyPixelsFromBuffer(buffer);
+            }catch(Exception ex)
+            {
+                ex.printStackTrace();
+            }
+
+            //On scale le bitmap pour l'éfficacité
+            Bitmap sacledBitmap = Bitmap.createScaledBitmap(bitmap, mDesiredWidth, mDesiredHeight, false);
+
+            //process Image, Algo de janic ... ça plante en ce moment ...
+            ImageParser parser = new ImageParser();
+            List<ColorConfig> colorConfigs = new ArrayList<>();
+            colorConfigs.add(new ColorConfig(ColorType.BLUE, Color.parseColor("#0600ff"), 30, 0.5f, 0.5f));
+            colorConfigs.add(new ColorConfig(ColorType.RED, Color.parseColor("#ff0000"), 30, 0.5f, 0.5f));
+            colorConfigs.add(new ColorConfig(ColorType.WHITE, Color.parseColor("#ffffff"), 180, 0.2f, 0.2f));
+            parser.setColorConfigs(colorConfigs);
+
+            ImageParserResult res = parser.parseBitmap(sacledBitmap);
+            String out = "";
+            out += res.success ? "found " : "not found ";
+            if (res.success) {
+                out += res.values[Constants.ZONE_MEDIUM_TOP_LEFT] + " ";
+                out += res.values[Constants.ZONE_SMALL_TOP_LEFT_1] + " ";
+                out += res.values[Constants.ZONE_SMALL_TOP_LEFT_2] + " ";
+                out += res.values[Constants.ZONE_BOTTOM_LEFT] + " ";
+                out += res.values[Constants.ZONE_RIGHT] + " ";
+                mResult = true;
+            }
+            Toast.makeText(mContext, out, Toast.LENGTH_LONG).show();
+        }
+
+        public boolean getImageParserResult(){
+            return this.mResult;
+        }
+
+        public void updateProcessor(Image image, int width, int height, Context context){
+            this.mImage = image;
+            this.mHeight = height;
+            this.mWidth = width;
+            this.mContext = context;
         }
 
     }
@@ -901,6 +1003,15 @@ public class CameraFragment extends Fragment implements View.OnClickListener {
                                 }
                             })
                     .create();
+        }
+    }
+
+
+    private void updateView(){
+        if(mProcessor != null) {
+            boolean capturedFibo = mProcessor.getImageParserResult();
+            DrawView v = (DrawView)getActivity().findViewById(R.id.View1);
+            v.fiboDetected(capturedFibo);
         }
     }
 

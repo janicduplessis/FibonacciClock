@@ -22,7 +22,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true" />
 
-    <FrameLayout
+    <!--<FrameLayout
         android:id="@+id/control"
         android:layout_width="match_parent"
         android:layout_height="112dp"
@@ -48,5 +48,6 @@
             android:src="@drawable/ic_action_info" />
 
     </FrameLayout>
+     -->
 
 </RelativeLayout>

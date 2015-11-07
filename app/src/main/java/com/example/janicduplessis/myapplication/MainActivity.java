@@ -48,7 +48,7 @@ public class MainActivity extends Activity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //same as set-up android:screenOrientation="portrait" in <activity>, AndroidManifest.xml
         //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
+        /*
         Bitmap bitmap = ((BitmapDrawable)getResources().getDrawable(R.drawable.test, getTheme())).getBitmap();
         Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 400, 250, false);
         ImageParser parser = new ImageParser();
@@ -68,16 +68,15 @@ public class MainActivity extends Activity {
             out += res.values[Constants.ZONE_RIGHT] + " ";
         }
         Toast.makeText(getApplicationContext(), out, Toast.LENGTH_LONG).show();
-
+*/
 
         setContentView(R.layout.activity_main);
         if (null == savedInstanceState) {
-            getFragmentManager().beginTransaction()
-                    .replace(R.id.container, CameraFragment.newInstance())
-                    .commit();
+            getFragmentManager().beginTransaction().replace(R.id.container, CameraFragment.newInstance()).commit();
         }
 
     }
+
 
 
 
