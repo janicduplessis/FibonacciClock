@@ -135,10 +135,10 @@ public class MainActivity extends AppCompatActivity {
             String[] cameraIdArray = manager.getCameraIdList();
             //find the rear camera
             for (String id : cameraIdArray) {
-                CameraCharacteristics specs = this.manager.getCameraCharacteristics(id);
+                CameraCharacteristics specs = manager.getCameraCharacteristics(id);
 
                 StreamConfigurationMap map = specs.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                Size _previewSize = map.getOutputSizes(SurfaceTexture.class)[0];
+                _previewSize = map.getOutputSizes(SurfaceTexture.class)[0];
 
                 int Orientation = specs.get(CameraCharacteristics.LENS_FACING);
                 if (Orientation == CameraCharacteristics.LENS_FACING_BACK) {
