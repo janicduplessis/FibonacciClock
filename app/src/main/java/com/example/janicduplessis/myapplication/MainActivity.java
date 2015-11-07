@@ -129,17 +129,6 @@ public class MainActivity extends AppCompatActivity {
         _cameraView.closeCamera();
         _cameraView.stopBackgroundThread();
 
-        /*if (_camera != null)
-        {
-            if(_cameraView != null){
-                _cameraView.StopLivePreview();
-                _cameraView.getBackgroundThread().quit();
-            }
-            _camera.close();
-            _camera = null;
-            _cameraView = null;
-        }
-        */
     }
 
 
@@ -236,7 +225,6 @@ public class MainActivity extends AppCompatActivity {
 
             texture.setDefaultBufferSize(_previewSize.getWidth(), _previewSize.getHeight());
             Surface surface = new Surface(texture);
-
 
             _cameraView = new CameraView(_context, camera, surface, _previewSize.getWidth(), _previewSize.getHeight());
         }

@@ -53,7 +53,7 @@ public class CameraView{
 
 
         //_reader = ImageReader.newInstance(width,height, ImageFormat.JPEG,2);
-        //_reader.setOnImageAvailableListener(ImageReaderListener, _backgroundHandlerImageReader);
+       // _reader.setOnImageAvailableListener(ImageReaderListener, _backgroundHandlerImageReader);
 
        // _surfaces.add(_reader.getSurface());
         _surfaces.add(surface);
@@ -239,13 +239,13 @@ public class CameraView{
 
     public void stopBackgroundThread(){
         _backgroundThreadCamera.quitSafely();
-        _backgroundThreadImageReader.quitSafely();
+        //_backgroundThreadImageReader.quitSafely();
         try {
             _backgroundThreadCamera.join();
-            _backgroundThreadImageReader.join();
+           // _backgroundThreadImageReader.join();
             _backgroundThreadCamera = null;
-            _backgroundThreadImageReader = null;
-            _backgroundHandlerImageReader = null;
+           // _backgroundThreadImageReader = null;
+            //_backgroundHandlerImageReader = null;
             _backgroundHandlerCamera = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
