@@ -1,6 +1,7 @@
 package com.example.janicduplessis.myapplication;
 
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 
 import java.util.ArrayList;
@@ -80,8 +81,52 @@ public class ImageParser {
         // TODO: Check if the color is close to the color specified in the config.
         for (int i = 0; i < mColorConfigs.size(); i++) {
             ColorConfig config = mColorConfigs.get(i);
+            if(checkifColorValid(config.color))
+                return i;
         }
 
         return -1;
+    }
+
+    private boolean checkifColorValid(int color)
+    {
+       //all rigth so we transform this into HSV
+        float[] hsvValue = new float[3];
+        Color.colorToHSV(color, hsvValue);
+
+        float Hue = hsvValue[0];
+        float Saturation = hsvValue[1];
+        float Value = hsvValue[2];
+
+        //acceptable values
+        int SaturationMin = 50;
+        int SaturationMax = 100;
+        int ValueMin = 60;
+        int ValueMax = 100;
+
+        //more on the purple side
+        int RedHueMinHighSpectrum = 318;
+        int RedHueMaxHighSpectrum = 358;
+
+        //more on the orange side
+        int RedHueMinLowSpectrum = 0;
+        int RedHueMaxLowSpectrum = 20;
+
+        //between yellow and blue
+        int GreenHueMin = 82;
+        int GreenHueMax = 164;
+
+        //between green and purple
+        int BlueHueMin = 172;
+        int BlueHueMax = 274;
+
+
+        boolean SaturationOk = Saturation > SaturationMin && Saturation < SaturationMax;
+        boolean ValueOk = Value > ValueMin && Value < ValueMax;
+        boolean HueOk =  ((Hue > RedHueMinHighSpectrum && Hue < RedHueMaxHighSpectrum) || (Hue > RedHueMinLowSpectrum && Hue < RedHueMaxLowSpectrum) ||
+                         (Hue > GreenHueMin && Hue < GreenHueMax) ||
+                         (Hue > BlueHueMin && Hue < BlueHueMax));
+
+        return SaturationOk && ValueOk && HueOk;
     }
 }
