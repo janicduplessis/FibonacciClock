@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/container"
     tools:context="${relativePackage}.${activityClass}" >
 
 
@@ -13,6 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true" />
+
 
     <com.example.janicduplessis.myapplication.DrawView
         android:id="@+id/View1"
