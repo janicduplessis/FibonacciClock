@@ -29,6 +29,8 @@ public class CameraView{
     private List<Surface> _surfaces = new ArrayList<Surface>();
     private CameraCaptureSession _currentSession = null;
     private final static String TAG = "SimpleCamera";
+    private HandlerThread _backgroundThread = null;
+
 
     public CameraView(Context context, CameraDevice camera, Surface surface){
         _surfaces.add(surface);
@@ -57,7 +59,10 @@ public class CameraView{
         }
     }
 
-
+    public HandlerThread getBackgroundThread()
+    {
+        return this._backgroundThread;
+    }
 
 
     private CameraCaptureSession.StateCallback CameraCaptureSessionCallBack = new CameraCaptureSession.StateCallback() {
@@ -73,9 +78,9 @@ public class CameraView{
                 CaptureRequest request = builder.build();
 
 
-                HandlerThread backgroundThread = new HandlerThread("CameraPreview");
-                backgroundThread.start();
-                Handler backgroundHandler = new Handler(backgroundThread.getLooper());
+                _backgroundThread = new HandlerThread("CameraPreview");
+                _backgroundThread.start();
+                Handler backgroundHandler = new Handler(_backgroundThread.getLooper());
 
                 session.setRepeatingRequest(request, CameraCaptureCallback, backgroundHandler);
 

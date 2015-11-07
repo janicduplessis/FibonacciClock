@@ -3,6 +3,9 @@ package com.example.janicduplessis.myapplication;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -34,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     private CameraView _cameraView = null;
     private Size _previewSize = null;
     private CameraDevice _camera = null;
+    private DrawView _drawView = null;
 
 
     private final static String TAG = "SimpleCamera";
@@ -63,12 +67,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width,
-                                              int height) {
+        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
             // TODO Auto-generated method stub
             Log.i(TAG, "onSurfaceTextureAvailable()");
 
             initializeCamera();
+
         }
     };
 
@@ -85,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
         mTextureView = (TextureView) findViewById(R.id.textureView1);
         mTextureView.setSurfaceTextureListener(mSurfaceTextureListner);
+
     }
 
     @Override
@@ -119,11 +124,34 @@ public class MainActivity extends AppCompatActivity {
         {
             if(_cameraView != null){
                 _cameraView.StopLivePreview();
+                _cameraView.getBackgroundThread().quit();
             }
             _camera.close();
             _camera = null;
             _cameraView = null;
         }
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.i(TAG, "onRestart()");
+       // mTextureView.findFocus();
+       // initializeCamera();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume()");
+       // initializeCamera();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.i(TAG, "onStart()");
+       // initializeCamera();
     }
 
 
