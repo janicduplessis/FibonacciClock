@@ -21,4 +21,6 @@ public class Constants {
     public static final int ZONE_SMALL_TOP_LEFT_2 = 2;
     public static final int ZONE_BOTTOM_LEFT = 3;
     public static final int ZONE_RIGHT = 4;
+
+    public static final int REQUEST_CODE_FOR_CAMERA = 1337;
 }
