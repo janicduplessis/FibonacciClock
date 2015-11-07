@@ -1,11 +1,14 @@
 package com.example.janicduplessis.myapplication;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -27,6 +30,8 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.app.Activity.*;
+
+import java.util.concurrent.Semaphore;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,12 +57,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width,
-                                                int height) {
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
             // TODO Auto-generated method stub
             Log.i(TAG, "onSurfaceTextureSizeChanged()");
-
+            configureTransform(width, height);
         }
+
+
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
@@ -120,7 +126,10 @@ public class MainActivity extends AppCompatActivity {
         // TODO Auto-generated method stub
         super.onPause();
 
-        if (_camera != null)
+        _cameraView.closeCamera();
+        _cameraView.stopBackgroundThread();
+
+        /*if (_camera != null)
         {
             if(_cameraView != null){
                 _cameraView.StopLivePreview();
@@ -130,29 +139,24 @@ public class MainActivity extends AppCompatActivity {
             _camera = null;
             _cameraView = null;
         }
+        */
     }
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        Log.i(TAG, "onRestart()");
-       // mTextureView.findFocus();
-       // initializeCamera();
-    }
+
+
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "onResume()");
-       // initializeCamera();
+        if (mTextureView.isAvailable()) {
+            initializeCamera();
+        } else {
+            mTextureView.setSurfaceTextureListener(mSurfaceTextureListner);
+        }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.i(TAG, "onStart()");
-       // initializeCamera();
-    }
+
 
 
     private void initializeCamera()
@@ -192,6 +196,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    //code taken at : https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java
+    private void configureTransform(int viewWidth, int viewHeight) {
+        Activity activity = this;
+        if (null == mTextureView || null == _previewSize || null == activity) {
+            return;
+        }
+        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        Matrix matrix = new Matrix();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        RectF bufferRect = new RectF(0, 0, _previewSize.getHeight(), _previewSize.getWidth());
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+            float scale = Math.max(
+                    (float) viewHeight / _previewSize.getHeight(),
+                    (float) viewWidth / _previewSize.getWidth());
+            matrix.postScale(scale, scale, centerX, centerY);
+            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        } else if (Surface.ROTATION_180 == rotation) {
+            matrix.postRotate(180, centerX, centerY);
+        }
+        mTextureView.setTransform(matrix);
+    }
+
     private final CameraDevice.StateCallback CameraOpenCallBack = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(CameraDevice camera) {
@@ -207,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
             Surface surface = new Surface(texture);
 
 
-            _cameraView = new CameraView(_context, camera, surface);
+            _cameraView = new CameraView(_context, camera, surface, _previewSize.getWidth(), _previewSize.getHeight());
         }
 
         @Override
@@ -220,7 +251,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
-
 
 
     @Override
