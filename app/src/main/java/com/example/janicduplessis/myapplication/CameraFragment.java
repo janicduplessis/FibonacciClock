@@ -58,6 +58,7 @@ package com.example.janicduplessis.myapplication;
         import android.view.TextureView;
         import android.view.View;
         import android.view.ViewGroup;
+        import android.widget.ImageView;
         import android.widget.Toast;
 
         import java.io.ByteArrayOutputStream;
@@ -908,12 +909,24 @@ public class CameraFragment extends Fragment {
 
             int w = bitmapSource.getWidth();
             int h = bitmapSource.getHeight();
-            Bitmap bitmap = null;
-            if( w > h) {
-                bitmap = Bitmap.createBitmap(bitmapSource, w / 7, h / 9,(w - (w / 7)),(h - (h / 9)));
-            }else{
-                bitmap = Bitmap.createBitmap(bitmapSource, w / 7, h / 3,(w - (w / 7)),(h - (h / 3)));
+            Bitmap bitmapTmp;
+            if(w > h) {
+                bitmapTmp = Bitmap.createBitmap(bitmapSource, w / 7, h / 9,(w - (w / 7)),(h - (h / 9)));
+            } else {
+                int frameWidth = w - 2 * w / 7;
+                int frameHeight = frameWidth * 250 / 400;
+                bitmapTmp = Bitmap.createBitmap(bitmapSource, (w - frameWidth) / 2, (h - frameHeight) / 2, frameWidth, frameHeight);
             }
+
+            final Bitmap bitmap = Bitmap.createScaledBitmap(bitmapTmp, 400, 250, false);
+
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ImageView test = (ImageView) getActivity().findViewById(R.id.testImageView);
+                    test.setImageBitmap(bitmap);
+                }
+            });
 
             //for some reason the JPG is rotated ?
           //  Matrix matrix = new Matrix();

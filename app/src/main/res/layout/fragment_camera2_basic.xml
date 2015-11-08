@@ -34,7 +34,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    </FrameLayout>
+    <ImageView
+        android:layout_width="138dp"
+        android:layout_height="138dp"
+        android:id="@+id/testImageView"
+        android:layout_gravity="center_horizontal|bottom" />
+
+</FrameLayout>
 
     <!--<FrameLayout
         android:id="@+id/control"

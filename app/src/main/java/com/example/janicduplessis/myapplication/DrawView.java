@@ -51,18 +51,18 @@ public class DrawView extends View {
         paint.setColor((mFiboFount ? Color.GREEN : Color.BLUE));
 
         //landscape
-        if( width > height) {
+        if(width > height) {
             canvas.drawRect((width / 7),
                     ((height / 9)),
                     ((width - (width / 7))),
                     ((height - (height / 9))),
                     paint);
-        }else{
-            canvas.drawRect((width / 7),
-                    ((height / 3)),
-                    ((width - (width / 7))),
-                    ((height - (height / 3))),
-                    paint);
+        } else {
+            int frameWidth = width - 2 * height / 7;
+            int frameHeight = frameWidth * 250 / 400;
+            int left = (width - frameWidth) / 2;
+            int top = (height - frameHeight) / 2;
+            canvas.drawRect(left, top, left + frameWidth, top + frameHeight, paint);
         }
 
     }
