@@ -133,17 +133,18 @@ public class CameraFragment extends Fragment {
             openCamera(width, height);
 
             //take picture each 3 seconds
-            final Handler h = new Handler();
-            final int delay = 3000; //milliseconds
-            h.postDelayed(new Runnable() {
-                public void run() {
-                    //do something
-                    takePicture();
-                    h.postDelayed(this, delay);
-                    //check for result !!
-                    updateView();
-                }
-            }, delay);
+            if(mBackgroudHandlerCapture != null) {
+                final int delay = 3000; //milliseconds
+                mBackgroudHandlerCapture.postDelayed(new Runnable() {
+                    public void run() {
+                        //do something
+                        takePicture();
+                        mBackgroudHandlerCapture.postDelayed(this, delay);
+                        //check for result !!
+                        updateView();
+                    }
+                }, delay);
+            }
         }
 
         @Override
@@ -225,10 +226,14 @@ public class CameraFragment extends Fragment {
      */
     private HandlerThread mBackgroundThread;
 
+    private HandlerThread mBackgroundCaptureThread;
+
     /**
      * A {@link Handler} for running tasks in the background.
      */
     private Handler mBackgroundHandler;
+
+    private Handler mBackgroudHandlerCapture;
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -414,7 +419,6 @@ public class CameraFragment extends Fragment {
         //view.findViewById(R.id.picture).setOnClickListener(this);
         //view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-
         mContext =  view.getContext();
     }
 
@@ -580,6 +584,11 @@ public class CameraFragment extends Fragment {
         mBackgroundThread = new HandlerThread("CameraBackground");
         mBackgroundThread.start();
         mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+
+        mBackgroundCaptureThread = new HandlerThread("CameraCapture");
+        mBackgroundCaptureThread.start();
+        mBackgroudHandlerCapture = new Handler(mBackgroundCaptureThread.getLooper());
+
     }
 
     /**
@@ -587,10 +596,15 @@ public class CameraFragment extends Fragment {
      */
     private void stopBackgroundThread() {
         mBackgroundThread.quitSafely();
+        mBackgroundCaptureThread.quitSafely();
         try {
             mBackgroundThread.join();
             mBackgroundThread = null;
             mBackgroundHandler = null;
+
+            mBackgroundCaptureThread.join();
+            mBackgroundCaptureThread = null;
+            mBackgroudHandlerCapture = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -885,15 +899,28 @@ public class CameraFragment extends Fragment {
             //http://stackoverflow.com/questions/12208619/buffer-not-large-enough-for-pixels
             // buffer = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight() * 2);
 
-            Bitmap bitmap = null;
+            /*Bitmap bitmap = null;
             if( mWidth > mHeight) {
                 bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 9,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 9)));
             }else{
                 bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 3,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 3)));
+            }*/
+
+            int w = bitmapSource.getWidth();
+            int h = bitmapSource.getHeight();
+            Bitmap bitmap = null;
+            if( w > h) {
+                bitmap = Bitmap.createBitmap(bitmapSource, w / 7, h / 9,(w - (w / 7)),(h - (h / 9)));
+            }else{
+                bitmap = Bitmap.createBitmap(bitmapSource, w / 7, h / 3,(w - (w / 7)),(h - (h / 3)));
             }
 
+            //for some reason the JPG is rotated ?
+          //  Matrix matrix = new Matrix();
+          //  matrix.postRotate(90);
+          //  Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
 
-            FileOutputStream fos = null;
+           /* FileOutputStream fos = null;
             try {
                 fos = new FileOutputStream(mFile);
                 bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
@@ -903,6 +930,7 @@ public class CameraFragment extends Fragment {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            */
 
 
             //On scale le bitmap pour que l'algo prenne moins de temps!
