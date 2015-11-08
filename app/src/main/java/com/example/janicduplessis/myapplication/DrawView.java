@@ -30,15 +30,10 @@ public class DrawView extends View {
     }
 
     public void fiboDetected(boolean isFibo){
-        if(isFibo)
-        {
-            mPaint.setColor(Color.GREEN);
-        }else{
-            mPaint.setColor(Color.BLUE);
-        }
+            mFiboFount = isFibo;
     }
 
-    private Paint mPaint = new Paint();
+    private boolean mFiboFount = false;
 
 
     @Override
@@ -52,6 +47,8 @@ public class DrawView extends View {
         paint.setStyle(Paint.Style.STROKE);
         //then draw the square !!
         paint.setStrokeWidth(8);
+
+        paint.setColor((mFiboFount ? Color.GREEN : Color.BLUE));
 
         //landscape
         if( width > height) {

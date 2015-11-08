@@ -8,11 +8,4 @@
 
 
 
-
-
-    <com.example.janicduplessis.myapplication.DrawView
-        android:id="@+id/View1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
 </FrameLayout>

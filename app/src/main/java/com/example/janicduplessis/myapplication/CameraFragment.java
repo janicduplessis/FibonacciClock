@@ -16,6 +16,7 @@ package com.example.janicduplessis.myapplication;
  */
 
         import android.graphics.Bitmap;
+        import android.graphics.BitmapFactory;
         import android.graphics.Color;
         import android.support.v13.app.FragmentCompat;
         import android.Manifest;
@@ -59,9 +60,12 @@ package com.example.janicduplessis.myapplication;
         import android.view.ViewGroup;
         import android.widget.Toast;
 
+        import java.io.ByteArrayOutputStream;
         import java.io.File;
+        import java.io.FileNotFoundException;
         import java.io.FileOutputStream;
         import java.io.IOException;
+        import java.io.OutputStream;
         import java.nio.ByteBuffer;
         import java.util.ArrayList;
         import java.util.Arrays;
@@ -863,8 +867,8 @@ public class CameraFragment extends Fragment {
             mHeight = height;
 
             //for now there are both the same
-            mDesiredWidth = mWidth / 2;
-            mDesiredHeight = mHeight / 2;
+            mDesiredWidth = mWidth / 3;
+            mDesiredHeight = mHeight / 3;
         }
 
         @Override
@@ -875,22 +879,36 @@ public class CameraFragment extends Fragment {
             buffer.get(bytes);
 
             //create bitmap from image
-            Bitmap bitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-
+            //Bitmap bitmapSource = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+            Bitmap bitmapSource = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
             //hack, pcq j'avais des expceptions comme quoi Buffer not large enough for pixels
             //http://stackoverflow.com/questions/12208619/buffer-not-large-enough-for-pixels
-           // buffer = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight() * 2);
-            try {
-                bitmap.copyPixelsFromBuffer(buffer);
-            }catch(Exception ex)
-            {
-                ex.printStackTrace();
+            // buffer = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight() * 2);
+
+            Bitmap bitmap = null;
+            if( mWidth > mHeight) {
+                bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 9,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 9)));
+            }else{
+                bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 3,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 3)));
             }
 
-            //On scale le bitmap pour l'éfficacité
-            Bitmap sacledBitmap = Bitmap.createScaledBitmap(bitmap, mDesiredWidth, mDesiredHeight, false);
 
-            //process Image, Algo de janic ... ça plante en ce moment ...
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(mFile);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+                fos.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            //On scale le bitmap pour que l'algo prenne moins de temps!
+            //Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, mDesiredWidth, mDesiredHeight, false);
+
+            //process Image, Algo de Janic
             ImageParser parser = new ImageParser();
             List<ColorConfig> colorConfigs = new ArrayList<>();
             colorConfigs.add(new ColorConfig(ColorType.BLUE, Color.parseColor("#0600ff"), 30, 0.5f, 0.5f));
@@ -898,7 +916,7 @@ public class CameraFragment extends Fragment {
             colorConfigs.add(new ColorConfig(ColorType.WHITE, Color.parseColor("#ffffff"), 180, 0.2f, 0.2f));
             parser.setColorConfigs(colorConfigs);
 
-            ImageParserResult res = parser.parseBitmap(sacledBitmap);
+            ImageParserResult res = parser.parseBitmap(bitmap);
             String out = "";
             out += res.success ? "found " : "not found ";
             if (res.success) {
