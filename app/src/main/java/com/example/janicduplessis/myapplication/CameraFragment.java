@@ -261,8 +261,10 @@ public class CameraFragment extends Fragment {
             //mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
             if(mProcessor == null) {
                 mProcessor = new ImageProcessor(reader.acquireLatestImage(), reader.getWidth(), reader.getHeight(), mContext);
+                reader.close();
             }else{
-                mProcessor.updateProcessor(reader.acquireLatestImage(), reader.getWidth(), reader.getHeight(), mContext);
+                mProcessor.updateProcessor(reader.acquireLatestImage(),mTextureView.getWidth(), mTextureView.getHeight() , mContext);
+                reader.close();
             }
             mBackgroundHandler.post(mProcessor);
         }
@@ -497,7 +499,11 @@ public class CameraFragment extends Fragment {
 
                 // For still image captures, we use the largest available size.
                 Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
-                mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, /*maxImages*/2);
+
+                Size smalest = Collections.min(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)), new CompareSizesByArea());
+
+                //mImageReader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, /*maxImages*/2);
+                mImageReader = ImageReader.newInstance(smalest.getWidth(), smalest.getHeight(), ImageFormat.JPEG, 2);
                 mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
 
                 // Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
@@ -878,8 +884,11 @@ public class CameraFragment extends Fragment {
         public ImageProcessor(Image image, int width, int height, Context context){
             mImage = image;
             mContext = context;
-            mWidth = width;
-            mHeight = height;
+            //mWidth = width;
+            //mHeight = height;
+            mWidth =  mTextureView.getWidth();
+            mHeight = mTextureView.getHeight();
+
 
             //for now there are both the same
             mDesiredWidth = mWidth / 3;
@@ -892,62 +901,64 @@ public class CameraFragment extends Fragment {
             ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
-
             //create bitmap from image
-            //Bitmap bitmapSource = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
-            Bitmap bitmapSource = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
-            //hack, pcq j'avais des expceptions comme quoi Buffer not large enough for pixels
-            //http://stackoverflow.com/questions/12208619/buffer-not-large-enough-for-pixels
-            // buffer = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight() * 2);
+            Bitmap bitmapSource = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+           // if(w > h) {
+           //     bitmapTmp = Bitmap.createBitmap(bitmapSource, w / 7, h / 9,(w - (w / 7)),(h - (h / 9)));
+           // } else {
+           //     int frameWidth = w - 2 * w / 7;
+           //     int frameHeight = frameWidth * 250 / 400;
+           //     bitmapTmp = Bitmap.createBitmap(bitmapSource, (w - frameWidth) / 2, (h - frameHeight) / 2, frameWidth, frameHeight);
+           // }
 
-            /*Bitmap bitmap = null;
-            if( mWidth > mHeight) {
-                bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 9,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 9)));
+            int deviceHeight = mHeight;
+            int deviceWidth = mWidth;
+
+            int pictureHeigth = mImage.getHeight();
+            int pictureWidth = mImage.getWidth();
+
+            int frameWidth = 0;
+            int frameHeight = 0;
+            if(deviceWidth > deviceHeight){
+                 frameWidth = mWidth / 7;
+                 frameHeight = mHeight / 9;
             }else{
-                bitmap = Bitmap.createBitmap(bitmapSource, mWidth / 7, mHeight / 3,(mWidth - (mWidth / 7)),(mHeight - (mHeight / 3)));
-            }*/
-
-            int w = bitmapSource.getWidth();
-            int h = bitmapSource.getHeight();
-            Bitmap bitmapTmp;
-            if(w > h) {
-                bitmapTmp = Bitmap.createBitmap(bitmapSource, w / 7, h / 9,(w - (w / 7)),(h - (h / 9)));
-            } else {
-                int frameWidth = w - 2 * w / 7;
-                int frameHeight = frameWidth * 250 / 400;
-                bitmapTmp = Bitmap.createBitmap(bitmapSource, (w - frameWidth) / 2, (h - frameHeight) / 2, frameWidth, frameHeight);
+                frameWidth = mWidth / 7;
+                frameHeight = mHeight / 3;
             }
 
-            final Bitmap bitmap = Bitmap.createScaledBitmap(bitmapTmp, 400, 250, false);
+            //dans le fond c'est un produit croissé !!
+            // frame width        XXX
+            //  ---------     =  ------
+            // device width      picture width
+            //
+            //même chose pour les offsets!
+            int framePictureWidth = (frameWidth * pictureHeigth) / deviceWidth;
+            int framePictureHeight = (frameHeight * pictureWidth) / deviceHeight;
+            int offsetPictureX = (((deviceWidth - frameWidth) / 2) * pictureWidth) / deviceWidth;
+            int offsetPictureY = (((deviceHeight - frameHeight) / 2) * pictureHeigth) / deviceHeight;
+
+            Bitmap cropBitmap = Bitmap.createBitmap(bitmapSource, offsetPictureX, offsetPictureY, framePictureWidth, framePictureHeight);
+
+
+            //for some reason the JPG is rotated ?
+             Matrix matrix = new Matrix();
+             matrix.postRotate(90);
+             final Bitmap rotatedBitmap = Bitmap.createBitmap(cropBitmap, 0, 0, cropBitmap.getWidth(), cropBitmap.getHeight(), matrix, true);
+
+            final Bitmap finalBitmap = Bitmap.createScaledBitmap(rotatedBitmap, 400, 250, false);
+
+
+
+
 
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     ImageView test = (ImageView) getActivity().findViewById(R.id.testImageView);
-                    test.setImageBitmap(bitmap);
+                    test.setImageBitmap(finalBitmap);
                 }
             });
-
-            //for some reason the JPG is rotated ?
-          //  Matrix matrix = new Matrix();
-          //  matrix.postRotate(90);
-          //  Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-
-           /* FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(mFile);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
-                fos.close();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            */
-
-
-            //On scale le bitmap pour que l'algo prenne moins de temps!
-            //Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, mDesiredWidth, mDesiredHeight, false);
 
             //process Image, Algo de Janic
             ImageParser parser = new ImageParser();
@@ -957,7 +968,7 @@ public class CameraFragment extends Fragment {
             colorConfigs.add(new ColorConfig(ColorType.WHITE, Color.parseColor("#ffffff"), 180, 0.2f, 0.2f));
             parser.setColorConfigs(colorConfigs);
 
-            ImageParserResult res = parser.parseBitmap(bitmap);
+            ImageParserResult res = parser.parseBitmap(finalBitmap);
             String out = "";
             out += res.success ? "found " : "not found ";
             if (res.success) {
